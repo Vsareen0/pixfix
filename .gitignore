@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+backend/.env
+backend/pixfix_dev.db
+backend/storage/
+backend/checkpoints/
+backend/data/
+# model weights (download / train them)
+backend/models/*.pt
+backend/models/*.pth
+# Node
+frontend/node_modules/
+frontend/dist/
+.DS_Store

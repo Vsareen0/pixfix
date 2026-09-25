@@ -1,0 +1,45 @@
+# Three-tier deployment: nginx+React (presentation) -> Flask+PyTorch (application) -> PostgreSQL + volume (data)
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: db_pixfix
+      POSTGRES_USER: pixfix
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pixfix}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pixfix -d db_pixfix"]
+      interval: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://pixfix:${POSTGRES_PASSWORD:-pixfix}@db:5432/db_pixfix
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production-at-least-32-chars}
+      AI_BACKEND: ${AI_BACKEND:-auto}
+      CORS_ORIGINS: http://localhost:8080
+    volumes:
+      - storage:/app/storage
+      - ./backend/models:/app/models   # put big-lama.pt / pixfix_gan.pth here
+    depends_on:
+      db:
+        condition: service_healthy
+    # For NVIDIA GPUs (needs nvidia-container-toolkit), uncomment:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices: [{ driver: nvidia, count: 1, capabilities: [gpu] }]
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  storage:
